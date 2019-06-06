@@ -2,6 +2,7 @@ import pyautogui
 import time
 import random
 import pyautogui_ext
+import sys
 
 #This one uses pyautogui_extensions,
 #available in my github 
@@ -62,7 +63,7 @@ class Tile:
         (Used for debugging purposes.)
         '''
         if not waitTime: #Randomness makes it look more human?
-            waitTime = random.uniform(.25, .65) 
+            waitTime = random.uniform(.1, .25) 
         pyautogui_ext.wiggleClick(self.coord[0],self.coord[1], waitTime)
         self.flip()
         for n in self.neighbors:
@@ -151,17 +152,28 @@ class Game:
         and identifies the region on-screen
         where the game is played.'''
         
-        playRegion = pyautogui_ext.safeLocateOnScreen("PlayGame.png")
+        #playRegion = pyautogui_ext.safeLocateOnScreen("PlayGame.png")
+        playRegion = pyautogui.locateOnScreen("PlayGame.png", minSearchTime = 5)
+        if playRegion == None:
+            print("Play Game button couldn't be found. Exiting")
+            return False
+                
         self.gameRegion = (playRegion[0]-295, #MAGIC CONSTANTS
                            playRegion[1]-320,
                            700,
                            600)
         #pyautogui.screenshot("test.png", gameRegion)
         pyautogui.click(playRegion[0], playRegion[1])
-        time.sleep(.25)
-        hardRegion = pyautogui_ext.safeLocateOnScreen("hard.png")
+        #time.sleep(.25)
+        #hardRegion = pyautogui_ext.safeLocateOnScreen("hard.png")
+        hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 5)
+        if hardRegion == None:
+            print("Hard button couldnt be found. exiting")
+            return False
         pyautogui.click(hardRegion[0], hardRegion[1])
-        time.sleep(.25)
+        #time.sleep(.25)
+
+        return True
 
     #Calculate coordinates of each tile
     def createTiles(self):
@@ -273,80 +285,6 @@ class Game:
         #      "by clicking (", row, col, ");",
         #      "success" if success else "failure")
 
-    def formPairs(self, i):
-        '''[DEPRECATED]
-        Forces all Light Tiles to the right of the row.
-        (Sorts the row such that Tiles with state=1 are pushed to the right.)
-
-        First, it performs a bubblesort on the game's internal board,
-        storing the history of sorts performed.
-
-        Then, it applies the history of sorts to the on-screen game,
-        clicking tiles as appropriate.
-
-        This is *also* implicitly responsible for leaving singletons
-        on the right edge.
-
-        This shouldn't have an underscore in the name because it
-        ends up being used in main.
-        '''
-        state = self.getRowStates(i)
-
-        #Bubblesort on the list of state numbers
-        #(More efficient since simpler data structure)
-        #Record the history of swaps
-        #Then apply to the actual gameboard
-        swapHistory = []
-        #print("[Game.formPairs] Applying bubblesort to", state)
-        for x in range(len(state)):
-            for y in range(len(state)-1):
-                if state[y] > state[y+1]:
-                    state[y], state[y+1] = state[y+1], state[y]
-                    swapHistory.append( (y,y+1) )
-        #print("[Game.formPairs] Bubblesorted", state, "History", swapHistory)
-
-        #Apply to the actual on-screen game
-        for entry in swapHistory:
-            gridCoordX = i
-            colIndices = list(self.board[i].keys())
-            gridCoordY = colIndices[entry[0]]
-            print("[Game.formPairs] Swapping on", gridCoordX, gridCoordY)
-            #swapHistory list indices are 0,1,2,3...
-            #Row indices are -3, -1, 1, 3
-            #colIndices retrieves the key
-            #corresponding to the actual hexgrid coordinate
-            self._shiftTile(gridCoordX, gridCoordY, right=True)
-        
-
-    def elimPairs(self, r):
-        '''[DEPRECATED]
-        In a row r, eliminates pairs of Light Tiles from left to right.
-        Should only be called after formPairs.
-
-        Implicitly leaves singletons/unpaired Light Tiles
-        dangling on the right edge.
-        '''
-        
-        state = self.getRowStates(r)
-
-        y = 0
-        while y < len(state):
-            if state[y] == 1:
-                gridCoordX = r
-                colIndices = list(self.board[r].keys())
-                gridCoordY = colIndices[y]
-                #God converting from list coordinates to grid hex coordiantes
-                #Is repetitive...
-
-                print("[Game.elimPairs] Eliminating pair on", gridCoordX, gridCoordY)
-                #Can we reuse shiftTile to eliminate a pair?
-                self._shiftTile(gridCoordX, gridCoordY, right=True)
-
-                y+=2 #We don't need to eliminate the pair twice
-            else:
-                y+=1 #Increment the loop index
-
-
     def solveRow(self, r):
         '''In a row r, uses a faster method (not bubblesort)
         to solve the row.
@@ -383,25 +321,35 @@ class Game:
                     g._shiftTile(r, firstLightTileCol, right=True)
 
     def replay(self):
-        playAgain = pyautogui_ext.safeLocateOnScreen("playAgain.png",
-                                                     region=self.gameRegion)
+        #playAgain = pyautogui_ext.safeLocateOnScreen("playAgain.png",
+        #                                             region=self.gameRegion)
+        playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 5)
+        if playAgain == None:
+            print("Play Again button was not found.",
+                  "This is eventually where the game will re-read the screen",
+                  "and try to play the game, corrected with new screen data.")
+            return False
+        
         pyautogui_ext.wiggleClick(playAgain[0], playAgain[1])
         
 #====
 #main
 #====
 
-numGames = 19
+numGames = 21
 #From 0 luckstreak, is 47 games
 
 g = Game()
-g.launchGame()
+launched = g.launchGame()
+if not launched:
+    sys.exit()
+
 g.createTiles()
 g.linkTiles()
 print(g)
 
 for i in range(numGames):
-    print("[Main] Beginning game", i)
+    print("[Main] Beginning game", i, "/", numGames)
     time.sleep(3) #Wait for game to load
     g.getStateFromScreen()
     print("[Main] Initial board state")
@@ -432,7 +380,7 @@ for i in range(numGames):
         g.solveRow(r)
     print(g)
 
-    time.sleep(3) #In case the replay button is taking some time to load
+    #time.sleep(3) #In case the replay button is taking some time to load
     if i < numGames-1: #Don't hit replay when you're on the last game
         g.replay()
 
