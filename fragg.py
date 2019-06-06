@@ -1,11 +1,7 @@
 import pyautogui
 import time
 import random
-import pyautogui_ext
 import sys
-
-#This one uses pyautogui_extensions,
-#available in my github 
 
 #Basically there are two "games" being played
 #One is the on-screen game, on FR's actual website,
@@ -25,6 +21,15 @@ import sys
 #on-screen coordinates (actual pixel location of each tile)
 #and virtual coordinates
 #(abstract location of each tile relative to the others)
+
+#Config option: use wiggle clicking or no
+try:
+    import pyautogui_ext
+    print("[Main] Importing pyautogui_ext and using wiggle click")
+    mouseClick = pyautogui_ext.wiggleClick
+except ImportError:
+    print("[Main] Couldn't import pyautogui_ext, using default click")
+    mouseClick = pyautogui.click
 
 #Represents one individual board tile.
 class Tile:
@@ -63,12 +68,13 @@ class Tile:
         (Used for debugging purposes.)
         '''
         if not waitTime: #Randomness makes it look more human?
-            waitTime = random.uniform(.1, .25) 
-        pyautogui_ext.wiggleClick(self.coord[0],self.coord[1], waitTime)
+            waitTime = random.uniform(.05, .15) 
+        mouseClick(x=self.coord[0],y=self.coord[1],interval=waitTime)
+        #mouseClick is defined at the top of the file, either as pag's
+        #built-in click or as a custom wiggle-clicking function
         self.flip()
         for n in self.neighbors:
             if n: #if this neighbor is not None
-                #print("[Tile.click] Flipping neighbor", n)
                 n.flip()
         
         time.sleep(waitTime)
@@ -152,7 +158,6 @@ class Game:
         and identifies the region on-screen
         where the game is played.'''
         
-        #playRegion = pyautogui_ext.safeLocateOnScreen("PlayGame.png")
         playRegion = pyautogui.locateOnScreen("PlayGame.png", minSearchTime = 5)
         if playRegion == None:
             print("Play Game button couldn't be found. Exiting")
@@ -163,16 +168,14 @@ class Game:
                            700,
                            600)
         #pyautogui.screenshot("test.png", gameRegion)
-        pyautogui.click(playRegion[0], playRegion[1])
-        #time.sleep(.25)
-        #hardRegion = pyautogui_ext.safeLocateOnScreen("hard.png")
+        mouseClick(playRegion[0], playRegion[1])
+        
         hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 5)
         if hardRegion == None:
             print("Hard button couldnt be found. exiting")
             return False
-        pyautogui.click(hardRegion[0], hardRegion[1])
-        #time.sleep(.25)
-
+        mouseClick(hardRegion[0], hardRegion[1])
+        
         return True
 
     #Calculate coordinates of each tile
@@ -321,8 +324,6 @@ class Game:
                     g._shiftTile(r, firstLightTileCol, right=True)
 
     def replay(self):
-        #playAgain = pyautogui_ext.safeLocateOnScreen("playAgain.png",
-        #                                             region=self.gameRegion)
         playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 5)
         if playAgain == None:
             print("Play Again button was not found.",
@@ -330,13 +331,14 @@ class Game:
                   "and try to play the game, corrected with new screen data.")
             return False
         
-        pyautogui_ext.wiggleClick(playAgain[0], playAgain[1])
+        mouseClick(playAgain[0],playAgain[1])
+        return True
         
 #====
 #main
 #====
 
-numGames = 21
+numGames = 2
 #From 0 luckstreak, is 47 games
 
 g = Game()
@@ -349,7 +351,7 @@ g.linkTiles()
 print(g)
 
 for i in range(numGames):
-    print("[Main] Beginning game", i, "/", numGames)
+    print("[Main] Beginning game", i+1, "/", numGames)
     time.sleep(3) #Wait for game to load
     g.getStateFromScreen()
     print("[Main] Initial board state")
@@ -382,6 +384,8 @@ for i in range(numGames):
 
     #time.sleep(3) #In case the replay button is taking some time to load
     if i < numGames-1: #Don't hit replay when you're on the last game
-        g.replay()
+        launched = g.replay()
+    if not launched:
+        pass #TODO
 
 print("[Main] Finished all games.")
