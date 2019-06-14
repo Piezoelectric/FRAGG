@@ -2,6 +2,7 @@ import pyautogui
 import time
 import random
 import sys
+import cv2
 
 #Basically there are two "games" being played
 #One is the on-screen game, on FR's actual website,
@@ -68,7 +69,8 @@ class Tile:
         (Used for debugging purposes.)
         '''
         if not waitTime: #Randomness makes it look more human?
-            waitTime = random.uniform(.05, .15) 
+            waitTime = random.uniform(.05, .1)
+            #waitTime = 0 #SPEED MODE
         mouseClick(x=self.coord[0],y=self.coord[1],interval=waitTime)
         #mouseClick is defined at the top of the file, either as pag's
         #built-in click or as a custom wiggle-clicking function
@@ -338,7 +340,7 @@ class Game:
 #main
 #====
 
-numGames = 2
+numGames = 5
 #From 0 luckstreak, is 47 games
 
 g = Game()
