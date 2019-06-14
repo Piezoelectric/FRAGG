@@ -2,7 +2,6 @@ import pyautogui
 import time
 import random
 import sys
-import cv2
 
 #Basically there are two "games" being played
 #One is the on-screen game, on FR's actual website,
@@ -70,7 +69,6 @@ class Tile:
         '''
         if not waitTime: #Randomness makes it look more human?
             waitTime = random.uniform(.05, .1)
-            #waitTime = 0 #SPEED MODE
         mouseClick(x=self.coord[0],y=self.coord[1],interval=waitTime)
         #mouseClick is defined at the top of the file, either as pag's
         #built-in click or as a custom wiggle-clicking function
@@ -160,7 +158,7 @@ class Game:
         and identifies the region on-screen
         where the game is played.'''
         
-        playRegion = pyautogui.locateOnScreen("PlayGame.png", minSearchTime = 5)
+        playRegion = pyautogui.locateOnScreen("PlayGame.png", minSearchTime = 20)
         if playRegion == None:
             print("Play Game button couldn't be found. Exiting")
             return False
@@ -172,7 +170,7 @@ class Game:
         #pyautogui.screenshot("test.png", gameRegion)
         mouseClick(playRegion[0], playRegion[1])
         
-        hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 5)
+        hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 20)
         if hardRegion == None:
             print("Hard button couldnt be found. exiting")
             return False
@@ -325,11 +323,39 @@ class Game:
                     print("Shifting or eliminating tile", r, firstLightTileCol)
                     g._shiftTile(r, firstLightTileCol, right=True)
 
+    def solveGame(self):
+        '''
+        Calls Game.solveRow multiple times, for each row, to solve a GG game.
+        '''
+
+        #First iteration
+        print(g)
+        for r in range(-3,4):
+            g.solveRow(r)
+        print(g)
+        #Click relevant tiles for iteration 2
+        lastRowState = g.getRowStates(3)
+        #Remember we're using list indxes here, not grid coords
+        if lastRowState[0] == 1:
+            print("Tile A == 1, flipping")
+            g.board[-3][-3].click()
+        if lastRowState[1] == 1:
+            print("Tile B == 1, flipping")
+            g.board[-3][-1].click()
+        if lastRowState[2] != lastRowState[3]:
+            print("Tile C != Tile D, flipping")
+            g.board[-3][1].click()
+        #Second iteration
+        print(g)
+        for r in range(-3,4):
+            g.solveRow(r)
+        print(g)
+
     def replay(self):
-        playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 5)
+        playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 20)
         if playAgain == None:
             print("Play Again button was not found.",
-                  "This is eventually where the game will re-read the screen",
+                  "The game will re-read the screen",
                   "and try to play the game, corrected with new screen data.")
             return False
         
@@ -357,37 +383,28 @@ for i in range(numGames):
     time.sleep(3) #Wait for game to load
     g.getStateFromScreen()
     print("[Main] Initial board state")
-    #First iteration
-    print(g)
-    for r in range(-3,4):
-        #g.formPairs(i)
-        #g.elimPairs(i)
-        g.solveRow(r)
-    print(g)
-    #Click relevant tiles for iteration 2
-    lastRowState = g.getRowStates(3)
-    #Remember we're using list indxes here, not grid coords
-    if lastRowState[0] == 1:
-        print("Tile A == 1, flipping")
-        g.board[-3][-3].click()
-    if lastRowState[1] == 1:
-        print("Tile B == 1, flipping")
-        g.board[-3][-1].click()
-    if lastRowState[2] != lastRowState[3]:
-        print("Tile C != Tile D, flipping")
-        g.board[-3][1].click()
-    #Second iteration
-    print(g)
-    for r in range(-3,4):
-        #g.formPairs(i)
-        #g.elimPairs(i)
-        g.solveRow(r)
-    print(g)
 
-    #time.sleep(3) #In case the replay button is taking some time to load
+    g.solveGame()
+
     if i < numGames-1: #Don't hit replay when you're on the last game
         launched = g.replay()
-    if not launched:
-        pass #TODO
+
+    numRetries = 5
+    j = 0
+    while not launched and j < numRetries:
+        print("Retrying game", i+1,"/",numGames, "; Attempt:", j+1)
+        g.getStateFromScreen()
+        g.solveGame()
+        launched = g.replay()
+        if launched: #OK we played the next game
+            break
+        else:
+            j = j+1
+    
+    if not launched: #Somehow, the above retries failed to launch the next game
+        #Probably due to wifi errors
+        print("Unable to launch the next game. Exiting")
+        sys.exit()
+    
 
 print("[Main] Finished all games.")
