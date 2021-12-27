@@ -260,10 +260,10 @@ class Game:
 
     def replay(self):
         playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 20)
-        if playAgain == None:
-            print("Play Again button was not found.",
-                  "The game will re-read the screen",
-                  "and try to play the game, corrected with new screen data.")
+        # We always need to look for the button, just to make sure we actually won the game
+
+        if not(playAgain):
+            print("Couldn't find the PlayAgain button, exiting")
             return False
         
         pyautogui.click(playAgain[0],playAgain[1])

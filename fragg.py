@@ -29,6 +29,7 @@ def main(numGames):
         if i < numGames-1: #Don't hit replay when you're on the last game
             launched = g.replay()
 
+        # Retry logic
         numRetries = 5
         j = 0
         while not launched and j < numRetries:
