@@ -68,7 +68,7 @@ if __name__ == "__main__":
     arg_line = " ".join(sys.argv[1:])
     args = parse_args(arg_line)
 
-    numGames = args['numGames'] or 47
+    numGames = int(args['numGames']) or 47
     safe = False if args['safe'] == '--unsafe' else True
 
     print("Requested %s games"%numGames)
