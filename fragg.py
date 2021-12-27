@@ -57,7 +57,8 @@ def parse_args(arg_line):
     )
 
     args = {}
-    if match_object := args_pattern.match(arg_line):
+    match_object = args_pattern.match(arg_line)
+    if match_object:
         args = {k: v for k, v in match_object.groupdict().items()
                 if v is not None}
     return args
