@@ -13,7 +13,7 @@ class Game:
         Odd rows have offset columns (e.g. (-3, -1)), even rows do not (e.g. (-2,0)).
         a Tile's row+col should be an even number
 
-        NOTE from future self: Don't use hexutil
+        NOTE from future self: maybe don't use hexutil idk
         '''
         #use a dict-of-dicts to allow negative indices
         #Dicts-of-dicts are slow but allow unambiguous internal coordinates
@@ -168,10 +168,13 @@ class Game:
     def getStateFromScreen(self):
         '''Using coordinates of each tile,
         Extract game state from screen (which tiles are light, which are shadow)'''
+
+        img = pyautogui.screenshot()
+
         for i in self.board.keys():
             row = self.board[i]
             for j in row.keys():
-                self.board[i][j].getStateFromScreen()
+                self.board[i][j].getStateFromScreen(img)
                 #print(self.board[i][j])
 
     def _shiftTile(self, i, j, right=False):

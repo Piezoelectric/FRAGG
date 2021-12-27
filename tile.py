@@ -52,14 +52,17 @@ class Tile:
         
         time.sleep(waitTime)
 
-    def getStateFromScreen(self):
+    def getStateFromScreen(self, img):
         '''Using the Tile's coordinates,
         looks at the screen to get the state of the Tile.
         '''
         #filename = str(time.time())+".png"
-        img = pyautogui.screenshot(region=self.coord) #Will be 25x25 img
-        pixel = img.getpixel((12,12))
-        self.state = int(pixel[1] > 100) #If green>100 state=1
+        #img = pyautogui.screenshot(region=self.coord) #Will be 25x25 img
+        #pixel = img.getpixel((12,12))
+
+        pixel = img.getpixel((self.coord[0]+12, self.coord[1]+12))
+        # Each tile is about 25x25 pixels, so add +12 to get the center of the tile
+        self.state = int(pixel[1] > 100) #If RGB green value>100, state=1
 
     def __str__(self):
         return str(self.coord) + " | " + str(self.state)

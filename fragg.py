@@ -17,7 +17,6 @@ def main(numGames):
 
     g.createTiles()
     g.linkTiles()
-    print(g)
 
     for i in range(numGames):
         print("[Main] Beginning game", i+1, "/", numGames)
