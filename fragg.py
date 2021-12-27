@@ -8,9 +8,9 @@ import time
 #It's slower to read from the screen every time we want to make a move, 
 #so we calculate all the moves in advance, then execute them all at once
         
-def main(numGames): 
+def main(numGames, safe=True, numRetries = 5): 
 
-    g = Game()
+    g = Game(safe)
     launched = g.launchGame()
     if not launched:
         sys.exit()
@@ -30,17 +30,13 @@ def main(numGames):
             launched = g.replay()
 
         # Retry logic
-        numRetries = 5
-        j = 0
-        while not launched and j < numRetries:
+        for j in range(numRetries):
+            if launched:
+                break
             print("Retrying game", i+1,"/",numGames, "; Attempt:", j+1)
             g.getStateFromScreen()
             g.solveGame()
             launched = g.replay()
-            if launched: #OK we played the next game
-                break
-            else:
-                j = j+1
         
         if not launched: #Somehow, the above retries failed to launch the next game
             #Probably due to wifi errors
@@ -54,4 +50,10 @@ if __name__ == "__main__":
     numGames = int(sys.argv[1]) if len(sys.argv) >1 else 47
     #It takes 47 games to cap lucky streak
     print("Requested %s games"%numGames)
-    main(numGames)
+
+    safe = True
+    if len(sys.argv) >2 and sys.argv[2] == "--unsafe":
+        safe = False
+    print("Starting in %s mode"%("SAFE" if safe else "UNSAFE"))
+
+    main(numGames, safe)

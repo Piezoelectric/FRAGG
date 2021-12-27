@@ -6,7 +6,7 @@ from tile import Tile
 #Game region on screen found, and we're in the "Play Again?" game loop
 
 class Game:
-    def __init__(self):
+    def __init__(self, safe):
         '''Initialize the simulated game.
 
         The simulated game uses coordinates as described in hexutil.py:
@@ -40,6 +40,9 @@ class Game:
         self.rowOffset = 53                 #Pixel diff between each row
         self.colOffset = self.tileWidth/2   #Column offset for switching rows
         #Since the row above and below are offset by half a tile
+
+        self.safe = safe
+        self.playAgainAssumedCoord = None
 
     def getRowStates(self, i):
         '''Returns the state of every tile in a given row i.
@@ -76,13 +79,25 @@ class Game:
                            600)
         #pyautogui.screenshot("test.png", gameRegion)
         pyautogui.click(playRegion[0], playRegion[1])
+
+        self.playAgainAssumedCoord = (self.gameRegion[0]+480,
+                                     self.gameRegion[1]+500,
+                                     20,
+                                     20)
         
-        hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 20)
-        if hardRegion == None:
-            print("Hard button couldnt be found. exiting")
-            return False
+        if self.safe:
+            hardRegion = pyautogui.locateOnScreen("hard.png", minSearchTime = 20)
+            # Look for the "Hard mode" button
+            if hardRegion == None:
+                print("Hard button couldnt be found. exiting")
+                return False
+        else:
+            hardRegion = (self.gameRegion[0] + 230,
+                          self.gameRegion[1] + 400,
+                          20,
+                          20)
+        
         pyautogui.click(hardRegion[0], hardRegion[1])
-        
         return True
 
     #Calculate coordinates of each tile
@@ -259,8 +274,12 @@ class Game:
         print(self.__str__())
 
     def replay(self):
-        playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 20)
-        # We always need to look for the button, just to make sure we actually won the game
+        if not(self.safe):
+            playAgain = self.playAgainAssumedCoord
+            # Make the fast but unsafe assumption that we won the game already
+        else: 
+            playAgain = pyautogui.locateOnScreen("playAgain.png", minSearchTime = 20)
+            # Look for the button, just to make sure we actually won the game
 
         if not(playAgain):
             print("Couldn't find the PlayAgain button, exiting")
