@@ -1,6 +1,7 @@
 import sys
 from game import Game
 import time
+import re
 
 #There are two "games" being played
 #One is the on-screen game, on the actual website; the other exists in-memory
@@ -46,14 +47,30 @@ def main(numGames, safe=True, numRetries = 5):
 
     print("[Main] Finished all games.")
 
-if __name__ == "__main__":
-    numGames = int(sys.argv[1]) if len(sys.argv) >1 else 47
-    #It takes 47 games to cap lucky streak
-    print("Requested %s games"%numGames)
+def parse_args(arg_line):
+    args_pattern = re.compile(
+        r"""^(
+            \s*(?P<numGames>\d*)? #for numgames
+            \s*(?P<safe>.*)? #for safety option
+        )$""",
+        re.VERBOSE
+    )
 
-    safe = True
-    if len(sys.argv) >2 and sys.argv[2] == "--unsafe":
-        safe = False
+    args = {}
+    if match_object := args_pattern.match(arg_line):
+        args = {k: v for k, v in match_object.groupdict().items()
+                if v is not None}
+    return args
+
+
+if __name__ == "__main__":
+    arg_line = " ".join(sys.argv[1:])
+    args = parse_args(arg_line)
+
+    numGames = args['numGames'] or 47
+    safe = False if args['safe'] == '--unsafe' else True
+
+    print("Requested %s games"%numGames)
     print("Starting in %s mode"%("SAFE" if safe else "UNSAFE"))
 
     main(numGames, safe)
